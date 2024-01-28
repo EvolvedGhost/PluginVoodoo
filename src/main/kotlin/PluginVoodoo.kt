@@ -10,7 +10,8 @@ import net.mamoe.mirai.utils.info
 import org.AlerHughes.Command.*
 import org.AlerHughes.Model.Tarot
 import net.mamoe.mirai.message.data.At
-import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsImage
+import net.mamoe.mirai.message.data.QuoteReply
+import net.mamoe.mirai.message.data.buildMessageChain
 import org.AlerHughes.Model.DivinatorySymbol
 import java.time.LocalDate
 import kotlin.math.abs
@@ -21,7 +22,7 @@ object PluginVoodoo : KotlinPlugin(
     JvmPluginDescription(
         id = "org.AlerHughes.plugin-voodoo",
         name = "PluginVoodoo",
-        version = "1.6.1",
+        version = "1.6.2",
     ) {
         author("AlerHughes")
     }
@@ -39,28 +40,42 @@ object PluginVoodoo : KotlinPlugin(
         CommandManager.registerCommand(RandomBanCommand)
         CommandManager.registerCommand(AllReleaseCommand)
 
-        pluginVoodooEventChannel.subscribeGroupMessages (priority = EventPriority.NORMAL)
+        pluginVoodooEventChannel.subscribeGroupMessages(priority = EventPriority.NORMAL)
         {
             "塔罗牌" {
                 val tarot: Tarot = GetRandomTarot()
                 val info: String = GetInfoByTarot(tarot)
-                val imgFile = resolveDataFile(tarot.info.imgUrl).uploadAsImage(subject)
-                if (JudgeSendTarotImg(tarot))
-                    subject.sendMessage(At(sender) + PlainText("\n" + info) + imgFile)
-                else
-                    subject.sendMessage(At(sender) + PlainText("\n" + info))
+                val imgFile = getTarotImg(tarot, sender)
+                val gmEvent = this
+                subject.sendMessage(buildMessageChain {
+                    +QuoteReply(gmEvent.message)
+                    +At(gmEvent.sender.id)
+                    +PlainText("\n${info}\n")
+                    +imgFile
+                })
             }
 
             "求签" {
                 val divinatorySymbol: DivinatorySymbol = GetRandomDivinatorySymbol()
                 val info: String = GetInfoByDivinatorySymbol(divinatorySymbol)
-                subject.sendMessage(At(sender) + PlainText("\n" + info))
+                val gmEvent = this
+                subject.sendMessage(buildMessageChain {
+                    +QuoteReply(gmEvent.message)
+                    +At(gmEvent.sender.id)
+                    +PlainText("\n${info}")
+                })
             }
 
             "今日运势" {
                 val localDate = LocalDate.now()
-                val luck = abs(Random(sender.id + localDate.year + localDate.monthValue + localDate.dayOfMonth).nextInt()) % 100
-                subject.sendMessage(At(sender) + PlainText("的今日运势为:$luck"))
+                val luck =
+                    abs(Random(sender.id + localDate.year + localDate.monthValue + localDate.dayOfMonth).nextInt()) % 100
+                val gmEvent = this
+                subject.sendMessage(buildMessageChain {
+                    +QuoteReply(gmEvent.message)
+                    +At(gmEvent.sender.id)
+                    +PlainText("的今日运势为:$luck")
+                })
             }
         }
     }
