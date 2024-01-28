@@ -6,13 +6,10 @@ import net.mamoe.mirai.message.data.Image
 import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsImage
 import org.AlerHughes.Controller.CustomJson
 import org.AlerHughes.Model.Tarot
-import java.time.LocalDate
 
 typealias tarotTable = Map<Int, Tarot>
-typealias usedImgTarotList = MutableMap<String, Image>
 
 var tarotsCache: tarotTable = mapOf()
-var usedImgTarotCache: usedImgTarotList = mutableMapOf()
 
 fun InitTarot() {
     tarotsCache = CustomJson.decodeFromString(PluginVoodoo.dataFolder.resolve("TarotData/Tarots.json").readText())
@@ -35,13 +32,5 @@ fun GetInfoByTarot(tarot: Tarot): String {
 }
 
 suspend fun getTarotImg(tarot: Tarot, user: User): Image {
-    val localDate = LocalDate.now()
-    val id = tarot.name + localDate.year + localDate.monthValue + localDate.dayOfMonth
-    return if (usedImgTarotCache.containsKey(id)) {
-        usedImgTarotCache[id]!!
-    } else {
-        val img = PluginVoodoo.resolveDataFile(tarot.info.imgUrl).uploadAsImage(user)
-        usedImgTarotCache[id] = img
-        img
-    }
+    return PluginVoodoo.resolveDataFile(tarot.info.imgUrl).uploadAsImage(user)
 }
